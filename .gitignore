@@ -1,3 +1,15 @@
+# root
 node_modules
 .env
 notes.txt
+dist/
+
+# server
+server/node_modules
+server/.env
+server/dist
+
+# web
+web/node_modules
+web/.env
+web/dist
