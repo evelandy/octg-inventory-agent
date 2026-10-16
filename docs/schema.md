@@ -25,12 +25,13 @@ erDiagram
     }
     PIPE_SPECS {
         uuid id PK
-        enum product_type "casing | tubing"
+        enum product_type "casing | tubing | production_casing | pup_joint"
         decimal od_in "inches, > 0"
         decimal weight_per_ft "lb/ft, > 0"
         text grade "e.g. L80, P110"
         text connection "e.g. BTC, EUE"
         enum length_range "R1 | R2 | R3"
+        text tag UK "short label for the spec"
     }
     YARDS {
         uuid id PK
@@ -70,7 +71,7 @@ Every table except `inspections` also has `created_at` and `updated_at`. `inspec
 |---|---|---|
 | `mills` | Steel mill | |
 | `heats` | Heat (batch of steel) at a mill | Heat numbers can repeat across mills, not within one |
-| `pipe_specs` | Distinct pipe specification | A spec is the combination of all six spec columns, including casing/tubing |
+| `pipe_specs` | Distinct pipe specification | A spec is the combination of all six spec columns, including product type. `tag` is a unique short label for referring to a spec |
 | `yards` | Storage yard | |
 | `racks` | Rack within a yard | Rack codes can repeat across yards, not within one |
 | `joints` | Physical joint of pipe | The core table. Mill is reached through `heat_id`, yard through `rack_id` |
@@ -82,6 +83,7 @@ Every table except `inspections` also has `created_at` and `updated_at`. `inspec
 |---|---|
 | Status, product type, length range, location state and inspection result accept only known values | Postgres enums |
 | No duplicate specs | `uq_pipe_specs_spec` on all six spec columns |
+| Spec tags are unique and required | unique, `NOT NULL` on `pipe_specs.tag` |
 | Heat number unique per mill; rack code unique per yard; serial number unique globally | `uq_heats_mill_heat_number`, `uq_racks_yard_code`, unique on `serial_number` |
 | OD, weight per foot and joint length must be positive | `ck_pipe_specs_od_positive`, `ck_pipe_specs_weight_positive`, `ck_joints_length_positive` |
 | Identifiers and names can't be blank or whitespace | `ck_*_not_blank` (serial, heat number, rack code, mill/yard name, grade, connection) |
@@ -99,6 +101,8 @@ SELECT yard, rack, joints, total_footage
 FROM inventory_summary
 WHERE product_type = 'tubing' AND status = 'available';
 ```
+
+`inventory_summary` has one row per rack, so add up its rows (`SUM(joints)`, `SUM(total_footage)`) when asking for a whole yard. [golden-queries.md](golden-queries.md) has worked examples with known answers.
 
 **`joint_latest_inspection`**: each joint's most recent inspection (`last_inspected_at`, `last_result`, `last_inspector`). "Most recent" means latest `inspected_at`, so a backdated entry typed in later doesn't count as the latest. Joints never inspected don't appear; `LEFT JOIN` to it from `joints` to include them.
 

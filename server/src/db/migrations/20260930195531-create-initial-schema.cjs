@@ -45,7 +45,7 @@ module.exports = {
     await queryInterface.createTable('pipe_specs', {
       id: uuidPk(),
       product_type: {
-        type: Sequelize.ENUM('casing', 'tubing'),
+        type: Sequelize.ENUM('casing', 'tubing', 'production_casing', 'pup_joint'),
         allowNull: false, // no default: every spec must say which it is
       },
       od_in: { type: Sequelize.DECIMAL(6, 3), allowNull: false },          // e.g. 5.500
@@ -56,6 +56,7 @@ module.exports = {
         type: Sequelize.ENUM('R1', 'R2', 'R3'),
         allowNull: false,
       },
+      tag: { type: Sequelize.TEXT, unique: true, allowNull: false },
       ...timestamps(),
     });
 
