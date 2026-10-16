@@ -11,7 +11,7 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "types": ["node"],
+    "types": ["node", "mocha"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

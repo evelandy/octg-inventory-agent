@@ -12,6 +12,35 @@ const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL
 });
 
+type Yard = {
+    name: string;
+    region: string;
+};
+
+type Mill = {
+    name: string;
+    location: string;
+};
+
+type JointSeed = {
+    serial_number: string;
+    pipe_spec_name: string;
+    product_type: 'casing' | 'tubing' | 'production_casing' | 'pup_joint';
+    heat_name: string | undefined;
+    rack_name: string | undefined;
+    length_ft: number;
+    status: string;
+    location_state: string;
+}
+
+type InspectionSeed = {
+    joint_id: string;
+    inspected_at: Date;
+    result: string;
+    inspector: string;
+    notes: string;
+}
+
 async function seedInventory() {
     console.log('Starting inventory seeding...');
 
@@ -54,7 +83,7 @@ async function seedInventory() {
         {type: 'R3', casing: {min: 38, max: 42}},
     ];
 
-    let sharedCatalog:any = {};
+    const sharedCatalog:Record<string, object> = {};
     // shared catalog that all pipe specs will use
     for(let i = 0; i < 8; i++) {
         sharedCatalog[`sharedSpec${i}`] = {
@@ -66,10 +95,10 @@ async function seedInventory() {
 
     // console.log(`Shared Catalog: ${JSON.stringify(sharedCatalog)}`);
 
-    let casingSpec:any = {};
-    let prodCasingSpec:any = {};
-    let tubingSpec:any = {};
-    let pupJointSpec:any = {};
+    const casingSpec:Record<string, object> = {};
+    const prodCasingSpec:Record<string, object> = {};
+    const tubingSpec:Record<string, object> = {};
+    const pupJointSpec:Record<string, object> = {};
 
     // Generate random catalog specs for all 4 types
     // const casingSpecs = faker.helpers.arrayElement(casingCatalog);
@@ -101,23 +130,23 @@ async function seedInventory() {
     }
 
     // yard
-    const yardsOpt:any = {};
+    const yardsOpt = {} as Record<'yard0' | 'yard1' | 'yard2' | 'yard3', Yard>;
     const yardName = ['Test Yard 1', 'Test Yard 2', 'Test Yard 3', 'Test Yard 4'];
     const yardRegion = ['Houston Yard (Gulf Coast)', 'Midland Yard (Permian Basin)', 'Pleasanton Yard (Eagle Ford)', 'Williston Yard (Bakken)'];
     for(let i = 0; i < 4; i++) {
         const randomYardName = faker.helpers.arrayElement(yardName);
         const randomYardRegion = faker.helpers.arrayElement(yardRegion);
-        yardsOpt[`yard${i}`] = { name: randomYardName + `-${i + 1}`, region: randomYardRegion };
+        yardsOpt[`yard${i}` as keyof typeof yardsOpt] = { name: randomYardName + `-${i + 1}`, region: randomYardRegion };
     }
 
     // mill
-    const millsOpt:any = {};
+    const millsOpt = {} as Record<'mill0' | 'mill1' | 'mill2' | 'mill3', Mill>;
     const millName = ['P2 Steel Works', 'Gulf Steel Tubular', 'Gulf Coast Piping', 'Permian Steel LLC'];
     const millLocation = ['Houston', 'Dallas', 'Austin', 'San Antonio'];
     for(let i = 0; i < 4; i++) {
         const randomMillName = faker.helpers.arrayElement(millName);
         const randomMillLocation = faker.helpers.arrayElement(millLocation);
-        millsOpt[`mill${i}`] = { name: randomMillName + `-${i + 1}`, location: randomMillLocation };
+        millsOpt[`mill${i}` as keyof typeof millsOpt] = { name: randomMillName + `-${i + 1}`, location: randomMillLocation };
     }
 
     // pipe specs
@@ -199,7 +228,7 @@ async function seedInventory() {
     const combinedPupJointSpec6 = Object.assign({}, JSON.parse(pupJointSpec6), JSON.parse(sharedSpec6));
 
     // heats
-    const heatNumOpt:any = {};
+    const heatNumOpt= {} as Record<number, string>;
     const heatNumArr = [
         "H1123",
         "H1456",
@@ -218,7 +247,7 @@ async function seedInventory() {
     };
 
     // racks
-    const racksOpt:any = {};
+    const racksOpt= {} as Record<number, string>;
     const rackCodesArr = [
         "A-01-1",
         "A-01-2",
@@ -356,11 +385,11 @@ async function seedInventory() {
 
         const statusOptions = ['available', 'reserved', 'quarantined'];
 
-        const joints: any = [];
-        const inspections_arr: any = [];
+        const joints: JointSeed[] = [];
+        const inspections_arr:Array<InspectionSeed> = [];
         let totalCount = 0;
         for (let i = 0; i < 2; i++) {
-            let cycleCount = ((i - 1) % 1) + 1
+            const cycleCount = ((i - 1) % 1) + 1
             // casing
             for (let j = 1; j <= 4; j++) {
                 totalCount += cycleCount;
@@ -914,14 +943,14 @@ async function seedInventory() {
 
         // 3. Insert Seed Data safely using parameterized queries
         console.log('Inserting seed data...');
-        const insertYardQuery = 'INSERT INTO yards (name, region) VALUES (\$1, \$2) RETURNING id;';
+        const insertYardQuery = 'INSERT INTO yards (name, region) VALUES (1, 2) RETURNING id;';
 
         for (const yard of yards) {
             const result = await client.query(insertYardQuery, [yard.name, yard.region]);
             yardIds.set(yard.name, result.rows[0]!.id);
         };
 
-        const insertMillQuery = 'INSERT INTO mills (name, location) VALUES (\$1, \$2) RETURNING id;';
+        const insertMillQuery = 'INSERT INTO mills (name, location) VALUES (1, 2) RETURNING id;';
 
         for (const mill of mills) {
             const result = await client.query(insertMillQuery, [mill.name, mill.location]);
@@ -929,7 +958,7 @@ async function seedInventory() {
             millIds.set(mill.name, result.rows[0]!.id);
         }
 
-        const insertPipeSpecQuery = 'INSERT INTO pipe_specs (product_type, od_in, weight_per_ft, grade, connection, length_range, tag) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7) RETURNING id;';
+        const insertPipeSpecQuery = 'INSERT INTO pipe_specs (product_type, od_in, weight_per_ft, grade, connection, length_range, tag) VALUES (1, 2, 3, 4, 5, 6, 7) RETURNING id;';
 
         for (const spec of pipe_specs) {
             const result = await client.query(insertPipeSpecQuery, [spec.product_type, spec.od_in, spec.weight_per_ft, spec.grade, spec.connection, spec.length_range, spec.tag]);
@@ -937,21 +966,21 @@ async function seedInventory() {
             pipeSpecTypes.set(spec.tag, spec.product_type);
         }
 
-        const insertHeatsQuery = 'INSERT INTO heats (mill_id, heat_number) VALUES (\$1, \$2) RETURNING id;';
+        const insertHeatsQuery = 'INSERT INTO heats (mill_id, heat_number) VALUES (1, 2) RETURNING id;';
 
         for (const heat of heats) {
             const result = await client.query(insertHeatsQuery, [millIds.get(heat.mill_name), heat.heat_number]);
             heatIds.set(heat.heat_number, result.rows[0]!.id);
         }
 
-        const insertRacksQuery = 'INSERT INTO racks (yard_id, code) VALUES (\$1, \$2) RETURNING id;';
+        const insertRacksQuery = 'INSERT INTO racks (yard_id, code) VALUES (1, 2) RETURNING id;';
 
         for (const rack of racks) {
             const result = await client.query(insertRacksQuery, [yardIds.get(rack.yard_name), rack.code]);
             rackIds.set(rack.code, result.rows[0]!.id);
         }
 
-        const insertJointsQuery = 'INSERT INTO joints (serial_number, pipe_spec_id, heat_id, rack_id, length_ft, status, location_state) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7) RETURNING id;';
+        const insertJointsQuery = 'INSERT INTO joints (serial_number, pipe_spec_id, heat_id, rack_id, length_ft, status, location_state) VALUES (1, 2, 3, 4, 5, 6, 7) RETURNING id;';
 
         for (const joint of joints) {
             const pipeSpecId = pipeSpecIds.get(joint.pipe_spec_name);
@@ -961,21 +990,21 @@ async function seedInventory() {
             if (specType !== joint.product_type) {
                 throw new Error(`${joint.serial_number}: is ${joint.product_type} but spec "${joint.pipe_spec_name}" is ${specType}`);
             }
-            const heatId = heatIds.get(joint.heat_name);
+            const heatId = heatIds.get(joint.heat_name ?? '');
             if (!heatId) throw new Error(`${joint.serial_number}: unknown heat "${joint.heat_name}"`);
-            const rackId = rackIds.get(joint.rack_name);
+            const rackId = rackIds.get(joint.rack_name ?? '');
             if (!rackId) throw new Error(`${joint.serial_number}: unknown rack "${joint.rack_name}"`);
 
             const result = await client.query(insertJointsQuery, [joint.serial_number, pipeSpecId, heatId, rackId, joint.length_ft, joint.status, joint.location_state]);
             jointIds.set(joint.serial_number, result.rows[0]!.id);
         }
 
-        const insertInspectionQuery = 'INSERT INTO inspections (joint_id, inspected_at, result, inspector, notes) VALUES (\$1, \$2, \$3, \$4, \$5) RETURNING id;';
+        const insertInspectionQuery = 'INSERT INTO inspections (joint_id, inspected_at, result, inspector, notes) VALUES (1, 2, 3, 4, 5) RETURNING id;';
 
         for (const inspection of inspections_arr) {
             const jointId = jointIds.get(inspection.joint_id);
             if (!jointId) throw new Error(`Inspection for unknown joint "${inspection.joint_id}"`);
-            const result = await client.query(insertInspectionQuery, [jointId, inspection.inspected_at, inspection.result, inspection.inspector, inspection.notes]);
+            await client.query(insertInspectionQuery, [jointId, inspection.inspected_at, inspection.result, inspection.inspector, inspection.notes]);
             // inspectionIds.set(inspection.joint_serial_number, result.rows[0]!.id);
         }
 
