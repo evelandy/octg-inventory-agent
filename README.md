@@ -133,6 +133,8 @@ Run from the `server/` directory.
 | `npm run migrate:undo`      | Revert the most recent migration                    |
 | `npm run migrate:undo:all`  | Revert all migrations                               |
 | `npm run migrate:make <name>` | Generate a new migration file                     |
+| `npm run seed:inventory`    | Replace the data in `octg_inventory` with seeded test data |
+| `npm run db:fixtures`       | Rebuild the separate `octg_fixtures` database with hand-written test data |
 
 ## Tech Stack
 

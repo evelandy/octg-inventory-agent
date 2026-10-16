@@ -3,13 +3,16 @@ node_modules
 .env
 notes.txt
 dist/
+.DS_Store
 
 # server
 server/node_modules
 server/.env
 server/dist
+server/src/.DS_Store
 
 # web
 web/node_modules
 web/.env
 web/dist
+web/src/.DS_Store
