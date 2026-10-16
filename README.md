@@ -1,5 +1,7 @@
 # octg-inventory-agent
 
+![CI](https://github.com/evelandy/octg-inventory-agent/actions/workflows/ci.yml/badge.svg)
+
 AI Agent for OCTG (Oil Country Tubular Goods) inventory.
 
 ## Project Structure
