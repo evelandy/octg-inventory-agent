@@ -17,6 +17,7 @@
     "migrate:status": "sequelize-cli db:migrate:status",
     "migrate:make": "sequelize-cli migration:generate --name",
     "db:ping": "tsx src/scripts/ping.ts",
+    "claude:ask": "tsx src/scripts/ask-claude.ts",
     "seed:inventory": "tsx src/db/seeders/inventory.ts",
     "db:fixtures": "tsx src/scripts/setup-fixtures.ts"
   },
