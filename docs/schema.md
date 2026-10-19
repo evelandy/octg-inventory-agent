@@ -30,7 +30,7 @@ erDiagram
         decimal weight_per_ft "lb/ft, > 0"
         text grade "e.g. L80, P110"
         text connection "e.g. BTC, EUE"
-        enum length_range "R1 | R2 | R3"
+        enum length_range "R1 | R2 | R3; NULL for pup joints"
         text tag UK "short label for the spec"
     }
     YARDS {
@@ -84,6 +84,7 @@ Every table except `inspections` also has `created_at` and `updated_at`. `inspec
 | Status, product type, length range, location state and inspection result accept only known values | Postgres enums |
 | No duplicate specs | `uq_pipe_specs_spec` on all six spec columns |
 | Spec tags are unique and required | unique, `NOT NULL` on `pipe_specs.tag` |
+| Pup joints have no length range; every other spec has R1–R3 | `ck_pipe_specs_pup_has_no_length_range` |
 | Heat number unique per mill; rack code unique per yard; serial number unique globally | `uq_heats_mill_heat_number`, `uq_racks_yard_code`, unique on `serial_number` |
 | OD, weight per foot and joint length must be positive | `ck_pipe_specs_od_positive`, `ck_pipe_specs_weight_positive`, `ck_joints_length_positive` |
 | Identifiers and names can't be blank or whitespace | `ck_*_not_blank` (serial, heat number, rack code, mill/yard name, grade, connection) |
@@ -123,5 +124,6 @@ WHERE product_type = 'tubing' AND status = 'available';
 | `add-data-quality-checks` | Positive-number and not-blank CHECKs |
 | `add-updated-at-trigger` | `set_updated_at()` and a trigger on each mutable table |
 | `create-views` | `joint_latest_inspection`, `inventory_summary` |
+| `pup-joints-without-length-range` | Makes `length_range` NULL for pup joints (2–12 ft, no API range) and required for everything else |
 
 Migration files use the `.cjs` extension because `server/package.json` sets `"type": "module"` and `sequelize-cli` loads files with `require()`. Once a migration has been pushed, don't edit it; add a new one.

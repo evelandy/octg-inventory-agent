@@ -47,7 +47,7 @@ try {
   } else if (error instanceof Anthropic.RateLimitError) {
     console.error('Rate limited, try again shortly');
   } else if (error instanceof Anthropic.APIError) {
-    console.error(`API error ${error.status}:`, error.message);
+    console.error(`API error: ${error.message}, the API could not be reached.`);
   } else if (error instanceof Anthropic.InternalServerError) {
     console.error(`Internal server error: ${error.message}`);
   } else {

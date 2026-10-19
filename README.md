@@ -84,6 +84,15 @@ octg-inventory-agent/
 
    `npm run migrate` builds the whole schema on an empty database. `db:ping` should print `✅ Connected to Postgres`.
 
+6. **Load the test data**
+
+   ```bash
+   npm run seed
+   npm run seed:check
+   ```
+
+   `npm run seed` replaces all data with the same 246 joints on every run. `seed:check` measures the data against the targets and should show only `PASS` rows. Expected answers to common questions are in [docs/golden-queries.md](docs/golden-queries.md).
+
 ## Database
 
 PostgreSQL 16 runs in Docker as the `octg-inventory-db` container. Data persists in the `octg_pgdata` volume between restarts. See [docs/schema.md](docs/schema.md) for the schema, ERD and design decisions.
@@ -135,7 +144,8 @@ Run from the `server/` directory.
 | `npm run migrate:undo`      | Revert the most recent migration                    |
 | `npm run migrate:undo:all`  | Revert all migrations                               |
 | `npm run migrate:make <name>` | Generate a new migration file                     |
-| `npm run seed:inventory`    | Replace the data in `octg_inventory` with seeded test data |
+| `npm run seed`              | Replace the data in `octg_inventory` with seeded test data (identical on every run) |
+| `npm run seed:check`        | Check the seeded data against its targets and print a fingerprint |
 | `npm run db:fixtures`       | Rebuild the separate `octg_fixtures` database with hand-written test data |
 
 ## Tech Stack

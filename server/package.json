@@ -18,8 +18,9 @@
     "migrate:make": "sequelize-cli migration:generate --name",
     "db:ping": "tsx src/scripts/ping.ts",
     "claude:ask": "tsx src/scripts/ask-claude.ts",
-    "seed:inventory": "tsx src/db/seeders/inventory.ts",
-    "db:fixtures": "tsx src/scripts/setup-fixtures.ts"
+    "seed": "tsx src/db/seeders/inventory.ts",
+    "db:fixtures": "tsx src/scripts/setup-fixtures.ts",
+    "seed:check": "docker compose exec -T db psql -U octg -d octg_inventory -f - < src/db/seed-checks.sql"
   },
   "keywords": [],
   "author": "",
