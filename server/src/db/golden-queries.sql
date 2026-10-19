@@ -1,59 +1,75 @@
--- Golden queries: questions with known answers, used to check the data and the agent.
--- Expected answers and the dataset they belong to are recorded in docs/golden-queries.md.
---
--- Run all five (from the repo root) after reset + migrate + seed:
---   docker compose exec -T db psql -U octg -d octg_inventory -f - < server/src/db/golden-queries.sql
---
+-- Known-answer queries for the seeded database (octg_inventory).
+-- Expected results, and the dataset they belong to, are in docs/golden-queries.md.
+
+-- Run all of them (from server/) after `npm run migrate && npm run seed`:
+-- Docker compose exec -T db psql -U octg -d octg_inventory -f - < src/db/golden-queries.sql
+
 -- \echo is a psql command, so this file must be run with psql, not a GUI SQL editor.
 
 \echo
-\echo '== Q1. How many available joints of 9-5/8" 40# J55 casing are in the Houston yard, and how many feet?'
--- inventory_summary has one row per rack, so SUM across racks to get the yard total.
--- "Houston" is in yards.region, not yards.name.
+\echo '== Q1. How many joints of 5-1/2" 20# P110 are available in Houston Yard, and how many feet?'
+-- Full-length pipe only, pup joints excluded.
 SELECT SUM(s.joints) AS joints, SUM(s.total_footage) AS total_footage
 FROM inventory_summary s
-JOIN yards y ON y.id = s.yard_id
-WHERE y.region LIKE 'Houston%'
+WHERE s.yard = 'Houston Yard'
   AND s.status = 'available'
-  AND s.product_type = 'casing'
-  AND s.od_in = 9.625
-  AND s.weight_per_ft = 40.00
-  AND s.grade = 'J55';
+  AND s.product_type <> 'pup_joint'
+  AND s.od_in = 5.500
+  AND s.weight_per_ft = 20.00
+  AND s.grade = 'P110';
 
-\echo '== Q2. How many joints and feet of each product type does each yard hold?'
--- Joints that aren't on a rack have no yard, so they are not part of this answer.
-SELECT y.name AS yard, y.region, s.product_type,
-       SUM(s.joints) AS joints, SUM(s.total_footage) AS total_footage
-FROM inventory_summary s
-JOIN yards y ON y.id = s.yard_id
-GROUP BY y.name, y.region, s.product_type
-ORDER BY y.name, s.product_type;
+\echo '== Q2. How much 13-3/8" 54.5# J55 casing do we have on hand, and how much is available?'
+SELECT COUNT(j.id) AS on_hand,
+       COUNT(j.id) FILTER (WHERE j.status = 'available')   AS available,
+       COUNT(j.id) FILTER (WHERE j.status = 'reserved')    AS reserved,
+       COUNT(j.id) FILTER (WHERE j.status = 'quarantined') AS quarantined
+FROM pipe_specs ps
+LEFT JOIN joints j ON j.pipe_spec_id = ps.id
+WHERE ps.product_type = 'casing' AND ps.od_in = 13.375 AND ps.weight_per_ft = 54.50 AND ps.grade = 'J55';
 
-\echo '== Q3. How many joints are quarantined, and where are they?'
--- COALESCE labels joints with no yard (in transit / at mill) instead of showing a blank.
-SELECT COALESCE(s.yard, '(not in a yard)') AS yard,
-       SUM(s.joints) AS joints, SUM(s.total_footage) AS total_footage
-FROM inventory_summary s
-WHERE s.status = 'quarantined'
+\echo '== Q3. Which yards have 3-1/2" 9.3# L80 tubing available, and which do not?'
+-- Starts from yards. Tubing only, no pup joints.
+SELECT y.name AS yard,
+       COUNT(j.id) AS on_hand,
+       COUNT(j.id) FILTER (WHERE j.status = 'available') AS available
+FROM yards y
+LEFT JOIN racks r ON r.yard_id = y.id
+LEFT JOIN joints j ON j.rack_id = r.id
+  AND j.pipe_spec_id IN (
+    SELECT id FROM pipe_specs
+    WHERE product_type = 'tubing' AND od_in = 3.500 AND weight_per_ft = 9.30 AND grade = 'L80')
+GROUP BY y.name
+ORDER BY y.name;
+
+\echo '== Q4. How many joints are overdue for inspection, by yard?'
+-- Overdue, with latest inspection before 2025-10-01 (12 months before the 2026-10-01 anchor), or never inspected.
+WITH last_inspection AS (
+  SELECT joint_id, MAX(inspected_at) AS last_inspected_at
+  FROM inspections
+  GROUP BY joint_id
+)
+SELECT COALESCE(y.name, '(not in a yard)') AS yard,
+       COUNT(*) AS overdue,
+       COUNT(*) FILTER (WHERE li.joint_id IS NULL) AS never_inspected,
+       COUNT(*) FILTER (WHERE li.joint_id IS NOT NULL) AS last_inspected_over_12_months_ago
+FROM joints j
+LEFT JOIN last_inspection li ON li.joint_id = j.id
+LEFT JOIN racks r ON r.id = j.rack_id
+LEFT JOIN yards y ON y.id = r.yard_id
+WHERE li.joint_id IS NULL
+   OR li.last_inspected_at < DATE '2026-10-01' - INTERVAL '12 months'
 GROUP BY 1
 ORDER BY 1;
 
-\echo '== Q4. Which mill made heat H1789, and where are those joints now?'
--- Traceability: joint -> heat -> mill, plus where each joint is.
--- Heat numbers are unique per mill, so if two mills used H1789 both would appear.
-SELECT m.name AS mill, y.name AS yard, r.code AS rack, j.location_state, COUNT(*) AS joints
+\echo '== Q5. Which heat and mill does joint J-00042 trace back to?'
+SELECT j.serial_number, h.heat_number, m.name AS mill, m.location AS mill_location, ps.tag AS spec
 FROM joints j
 JOIN heats h      ON h.id = j.heat_id
 JOIN mills m      ON m.id = h.mill_id
-LEFT JOIN racks r ON r.id = j.rack_id
-LEFT JOIN yards y ON y.id = r.yard_id
-WHERE h.heat_number = 'H1789'
-GROUP BY m.name, y.name, r.code, j.location_state
-ORDER BY y.name, r.code;
+JOIN pipe_specs ps ON ps.id = j.pipe_spec_id
+WHERE j.serial_number = 'J-00042';
 
-\echo '== Q5. How many joints failed their most recent inspection, and how many of those are still marked available?'
--- "Most recent" comes from joint_latest_inspection (latest inspected_at, not entry order).
--- FILTER counts only the rows matching its condition, so one query gives both numbers.
+\echo '== Q6. How many joints failed their most recent inspection, and how many of those are still marked available?'
 SELECT COUNT(*)                                       AS failed_latest,
        COUNT(*) FILTER (WHERE j.status = 'available') AS still_available
 FROM joint_latest_inspection li
