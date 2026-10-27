@@ -25,14 +25,20 @@ const runAgent = async ({ question, callModel, tools, maxIterations }: RunAgentP
         messages.push({ role: 'assistant', content: content });
         const results: Anthropic.ToolResultBlockParam[] = [];
         for (const block of content.filter((block) => block.type === 'tool_use')) {
-            tools.find((tool) => tool.name === block.name);
-            const tool = tools.find((tool) => tool.name === block.name);
-            if (!tool) {
-                throw new Error(`Tool not found: ${block.name}`);
+            try {
+                const tool = tools.find((tool) => tool.name === block.name);
+                if (!tool) {
+                    const answer = `Error, Unknown tool: ${block.name}`;
+                    results.push({ type: 'tool_result', tool_use_id: block.id, content: answer, is_error: true });
+                } else {
+                    const input = tool.inputSchema.parse(block.input);
+                    const result = await tool.handler(input);
+                    results.push({ type: 'tool_result', tool_use_id: block.id, content: result });
+                }
+            } catch (error) {
+                const answer = `Error, Unknown tool: ${block.name}: ${error instanceof Error ? error.message : String(error)}`;
+                results.push({ type: 'tool_result', tool_use_id: block.id, content: answer, is_error: true });
             }
-            const input = await tool.inputSchema.parse(block.input);
-            const result = await tool.handler(input);
-            results.push({type: 'tool_result', tool_use_id: block.id, content: result});
         }
         messages.push({ role: 'user', content: results });
     }

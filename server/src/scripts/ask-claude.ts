@@ -1,6 +1,7 @@
 import path from 'node:path';
 import dotenv from 'dotenv';
 import Anthropic from '@anthropic-ai/sdk';
+import { API_Errors } from '../agent/api-errors.js';
 
 // 1. Setup:
 dotenv.config({ path: path.resolve(import.meta.dirname, '..', '..', '..', '.env'), quiet: true });
@@ -8,12 +9,16 @@ dotenv.config({ path: path.resolve(import.meta.dirname, '..', '..', '..', '.env'
 const prompt = process.argv.slice(2).join(' ');
 if (!prompt) {
   console.error('Usage: npm run claude:ask -- "Question to Claude"');
-  process.exit(1);
+  process.exitCode = 1;
 }
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 
 try {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('ANTHROPIC_API_KEY is not set, please check your .env file and ensure it is properly configured.');
+    process.exitCode = 1;
+  }
   // 2. Request:
   const response = await client.beta.messages.create({
     // model: 'claude-opus-5',
@@ -42,16 +47,6 @@ try {
   }
 } catch (error) {
   // 4. Errors:
-  if (error instanceof Anthropic.AuthenticationError) {
-    console.error('Invalid or missing ANTHROPIC_API_KEY');
-  } else if (error instanceof Anthropic.RateLimitError) {
-    console.error('Rate limited, try again shortly');
-  } else if (error instanceof Anthropic.APIError) {
-    console.error(`API error: ${error.message}, the API could not be reached.`);
-  } else if (error instanceof Anthropic.InternalServerError) {
-    console.error(`Internal server error: ${error.message}`);
-  } else {
-    throw error;
-  }
+  API_Errors(error);
   process.exitCode = 1;
 }
