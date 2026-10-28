@@ -22,6 +22,7 @@ const API_Errors = (error: unknown) => {
     } else {
         throw error;
     }
+    process.exitCode = 1;
 };
 
 export { API_Errors };

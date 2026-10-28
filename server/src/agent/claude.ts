@@ -24,6 +24,7 @@ export function toClaudeTool(tool: AgentTool): Anthropic.Tool {
 export const callClaude = async (messages: Anthropic.MessageParam[]) => {
     const reply = await client.messages.create({
         model: 'claude-haiku-4-5',
+        system: `You are an inventory assistant for OCTG pipe yards. Answer questions about yards and inventory only from tool results, never from guesses. You may answer general questions directly. If a request needs an action the tools can't perform (such as reserving or moving pipe), say so plainly.`,
         max_tokens: 1000,
         messages,
         tools: tools.map(toClaudeTool),
