@@ -1,6 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import type { AgentTool } from './tools/types.js';
-import { error } from 'console';
 
 type RunAgentParams = {
     question: string;
@@ -16,7 +15,6 @@ type RunAgentResult = {
 };
 
 const runAgent = async ({ question, callModel, tools, maxIterations, debug }: RunAgentParams): Promise<RunAgentResult> => {
-    const errorMessage = error instanceof Error ? (error.message || error.name) : String(error);
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: question }];
     for (let i = 0; i < maxIterations; i++) {
         const response = await callModel(messages);
@@ -52,6 +50,7 @@ const runAgent = async ({ question, callModel, tools, maxIterations, debug }: Ru
                     results.push({ type: 'tool_result', tool_use_id: block.id, content: result });
                 }
             } catch (error) {
+                const errorMessage = error instanceof Error ? (error.message || error.name) : String(error);
                 const answer = `Tool ${block.name} failed: ${errorMessage}`;
                 if (debug) {
                     console.error(`tool ${block.name} failed: ${errorMessage}`);
