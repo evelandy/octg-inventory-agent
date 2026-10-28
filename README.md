@@ -127,6 +127,42 @@ npm run build
 npm start
 ```
 
+## Running the Agent
+
+The agent answers inventory questions from the command line. Claude decides when it needs to look something up, and the agent runs the matching tool against the database and sends the result back, repeating until Claude has an answer. Currently it has one tool, `list_yards`.
+
+It needs the database running and seeded (see [Setup](#setup)), and `ANTHROPIC_API_KEY` set in the root `.env`. From `server/`:
+
+```bash
+npm run agent -- "What yards do we have?"
+```
+
+The `--` passes everything after it to the agent instead of to npm. Quote the question.
+
+### Settings
+
+Set these on the same line as the command (they apply to that run only), or in the root `.env`.
+
+| Variable | Default | What it does |
+| -------- | ------- | ------------ |
+| `AGENT_DEBUG` | off | `true` prints each round to stderr: tool name, tool input, result size, and token usage |
+| `AGENT_MAX_ITERATIONS` | `5` | The most rounds the agent runs before stopping with a message instead of an answer |
+| `AGENT_MAX_PROMPT_LENGTH` | `2000` | The longest question accepted, in characters |
+
+Examples:
+
+```bash
+# See every round
+AGENT_DEBUG=true npm run agent -- "What yards do we have?"
+
+# Stop after one round (shows the iteration-limit message)
+AGENT_DEBUG=true AGENT_MAX_ITERATIONS=1 npm run agent -- "What yards do we have?"
+```
+
+Debug output goes to stderr and the answer to stdout, so `npm run agent -- "…" > answer.txt` saves just the answer.
+
+If a tool fails (for example, the database is stopped), the error is sent back to Claude as a tool error and the agent explains it couldn't reach the inventory. API problems (missing or invalid key, no network) print a one-line message.
+
 ## Available Scripts
 
 Run from the `server/` directory.
@@ -147,6 +183,8 @@ Run from the `server/` directory.
 | `npm run seed`              | Replace the data in `octg_inventory` with seeded test data (identical on every run) |
 | `npm run seed:check`        | Check the seeded data against its targets and print a fingerprint |
 | `npm run db:fixtures`       | Rebuild the separate `octg_fixtures` database with hand-written test data |
+| `npm run agent -- "<question>"` | Ask the inventory agent a question (see [Running the Agent](#running-the-agent)) |
+| `npm run claude:ask -- "<prompt>"` | Send one prompt to Claude and print the reply (no tools) |
 
 ## Tech Stack
 
