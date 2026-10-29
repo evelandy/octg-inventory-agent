@@ -20,7 +20,7 @@ Each entry below has an ID, the question, the expected result, and a note on wha
 |---|---|
 | Seed script | `server/src/db/seeders/inventory.ts`, run with `npm run seed` |
 | Determinism | `faker.seed(100)` and anchor date **2026-10-01** (`faker.setDefaultRefDate`); no value comes from the real clock |
-| Seed commit | ` ` |
+| Seed commit | `1c77dc2da152976f5b7ebcf781aeb0ed6269eb06` |
 | Recorded | 2026-10-19 |
 | Size | 4 yards, 10 racks, 4 mills, 10 heats, 30 specs, 246 joints, 411 inspections |
 | Data fingerprint | `81aadfe482b5ef6ed96e204bc72a1089` (from `npm run seed:check`) |

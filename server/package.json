@@ -17,6 +17,7 @@
     "migrate:status": "sequelize-cli db:migrate:status",
     "migrate:make": "sequelize-cli migration:generate --name",
     "db:ping": "tsx src/scripts/ping.ts",
+    "agent": "tsx src/scripts/agent.ts",
     "claude:ask": "tsx src/scripts/ask-claude.ts",
     "seed": "tsx src/db/seeders/inventory.ts",
     "db:fixtures": "tsx src/scripts/setup-fixtures.ts",
@@ -45,6 +46,7 @@
     "@anthropic-ai/sdk": "^0.135.0",
     "dotenv": "^18.0.5",
     "pg": "^8.23.1",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "zod": "^4.6.7"
   }
 }
